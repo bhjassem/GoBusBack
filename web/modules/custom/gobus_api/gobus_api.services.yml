@@ -1,0 +1,4 @@
+services:
+  gobus_api.repositories.user:
+    class: Drupal\gobus_api\Repositories\UserRepository
+    arguments: ['@entity_type.manager', '@password']

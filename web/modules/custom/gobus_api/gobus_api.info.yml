@@ -1,0 +1,9 @@
+name: 'GoBus API'
+type: module
+description: 'Custom API endpoints for GoBus Mobile Apps (Registration, Stats, etc.)'
+core_version_requirement: ^10 || ^11
+package: 'GoBus'
+dependencies:
+  - drupal:jsonapi
+  - drupal:rest
+  - drupal:user

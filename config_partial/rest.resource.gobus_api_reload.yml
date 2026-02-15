@@ -1,0 +1,17 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - gobus_api
+    - serialization
+    - user
+id: gobus_api_reload
+plugin_id: gobus_api_reload
+granularity: resource
+configuration:
+  methods:
+    - POST
+  formats:
+    - json
+  authentication:
+    - oauth2

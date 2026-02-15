@@ -1,0 +1,17 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - gobus_api
+    - serialization
+    - user
+id: gobus_api_stats
+plugin_id: gobus_api_stats
+granularity: resource
+configuration:
+  methods:
+    - GET
+  formats:
+    - json
+  authentication:
+    - oauth2

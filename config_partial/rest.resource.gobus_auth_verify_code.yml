@@ -1,0 +1,17 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - gobus_api
+    - serialization
+    - user
+id: gobus_auth_verify_code
+plugin_id: gobus_auth_verify_code
+granularity: resource
+configuration:
+  methods:
+    - POST
+  formats:
+    - json
+  authentication:
+    - oauth2
