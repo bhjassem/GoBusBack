@@ -1,0 +1,17 @@
+/vendor/
+/web/core/
+/web/modules/contrib/
+/web/themes/contrib/
+/web/profiles/contrib/
+/node_modules/
+
+# fichiers temporaires
+/web/sites/*/files/
+/web/sites/*/private/
+/web/sites/default/settings.php
+
+# mac
+.DS_Store
+
+# logs
+*.log
