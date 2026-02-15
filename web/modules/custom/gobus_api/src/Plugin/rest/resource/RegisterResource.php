@@ -22,6 +22,22 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
  */
 class RegisterResource extends ResourceBase
 {
+    /**
+     * The HTTP client.
+     *
+     * @var \GuzzleHttp\ClientInterface
+     */
+    protected $httpClient;
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition)
+    {
+        $instance = parent::create($container, $configuration, $plugin_id, $plugin_definition);
+        $instance->httpClient = $container->get('http_client');
+        return $instance;
+    }
 
     /**
      * {@inheritdoc}
@@ -29,21 +45,23 @@ class RegisterResource extends ResourceBase
     public function post($data)
     {
         // 1. Validation des champs obligatoires
-        $required_fields = ['phone', 'password', 'name', 'shop_name', 'city', 'access_code'];
+        $required_fields = ['phone', 'password', 'name', 'shop_name', 'city', 'code'];
         foreach ($required_fields as $field) {
             if (empty($data[$field])) {
                 throw new BadRequestHttpException("Missing required field: " . $field);
             }
         }
 
-        // 2. Vérification si le téléphone existe déjà
+        // 2. Vérification du Code SMS (Mock 5588)
+        if ($data['code'] !== '5588') {
+            return new ResourceResponse(['success' => false, 'message' => 'Invalid verification code.'], 400);
+        }
+
+        // 3. Vérification si le téléphone existe déjà
         $users = \Drupal::entityTypeManager()->getStorage('user')->loadByProperties(['field_phone' => $data['phone']]);
         if (!empty($users)) {
             return new ResourceResponse(['success' => false, 'message' => 'Phone number already registered.'], 400);
         }
-
-        // 3. TODO: Valider le Code d'Accès (Logique GoBus)
-        // Pour l'instant on accepte tout, mais c'est ici qu'on vérifierait.
 
         // 4. Création de l'utilisateur
         try {
@@ -59,14 +77,34 @@ class RegisterResource extends ResourceBase
             $user->set('field_shop_name', $data['shop_name']);
             $user->set('field_city', $data['city']);
             $user->set('field_access_code', $data['access_code']);
-
             // Role & Status
             $user->addRole('agent');
-            $user->activate(); // Active by default or wait for verification?
+            $user->activate();
 
             $user->save();
 
-            // Response matching Mobile App DTO
+            // 5. Internal Call to OAuth Endpoint after Registration (Auto-Login)
+            $client_id = 'gobus-reload-app-id';
+            $client_secret = 'gobus_reload_secret';
+
+            $request = \Drupal::request();
+            $base_url = $request->getSchemeAndHttpHost();
+
+            $response = $this->httpClient->post($base_url . '/oauth/token', [
+                'form_params' => [
+                    'grant_type' => 'password',
+                    'client_id' => $client_id,
+                    'client_secret' => $client_secret,
+                    'username' => $data['phone'],
+                    'password' => $data['password'],
+                ],
+                'http_errors' => false,
+                'verify' => false, // Bypass SSL verification for internal call if needed
+            ]);
+
+            $oauth_data = json_decode($response->getBody(), true);
+
+            // 6. Response matching Mobile App DTO
             $response_data = [
                 'success' => true,
                 'message' => 'Agent registered successfully.',
@@ -78,6 +116,12 @@ class RegisterResource extends ResourceBase
                         'shop_name' => $data['shop_name'],
                         'city' => $data['city'],
                         'role' => 'agent'
+                    ],
+                    'tokens' => [
+                        'access_token' => $oauth_data['access_token'] ?? null,
+                        'refresh_token' => $oauth_data['refresh_token'] ?? null,
+                        'token_type' => $oauth_data['token_type'] ?? 'Bearer',
+                        'expires_in' => $oauth_data['expires_in'] ?? 3600,
                     ]
                 ]
             ];
@@ -86,8 +130,8 @@ class RegisterResource extends ResourceBase
 
         }
         catch (\Exception $e) {
-            \Drupal::logger('gobus_api')->error($e->getMessage());
-            return new ResourceResponse(['success' => false, 'message' => 'Internal Server Error'], 500);
+            \Drupal::logger('gobus_api')->error('Registration error: ' . $e->getMessage() . ' Trace: ' . $e->getTraceAsString());
+            return new ResourceResponse(['success' => false, 'message' => 'Internal Server Error: ' . $e->getMessage()], 500);
         }
     }
 
