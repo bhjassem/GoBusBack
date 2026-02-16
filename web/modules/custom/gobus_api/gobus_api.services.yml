@@ -2,3 +2,8 @@ services:
   gobus_api.repositories.user:
     class: Drupal\gobus_api\Repositories\UserRepository
     arguments: ['@entity_type.manager', '@password']
+
+  gobus_api.route_subscriber:
+    class: Drupal\gobus_api\Routing\GobusRouteSubscriber
+    tags:
+      - { name: event_subscriber }

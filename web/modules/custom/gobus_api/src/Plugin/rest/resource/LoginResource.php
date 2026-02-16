@@ -88,11 +88,13 @@ class LoginResource extends ResourceBase
             if ($user) {
                 $user_dto = [
                     'id' => $user->id(),
+                    'account_id' => $user->get('field_account_id')->getString(),
                     'phone' => $user->get('field_phone')->getString(),
                     'name' => $user->get('field_full_name')->getString(),
                     'shop_name' => $user->get('field_shop_name')->getString(),
                     'city' => $user->get('field_city')->getString(),
-                    'role' => $user->getRoles()[1] ?? 'agent', // Get first non-auth role
+                    'balance' => (float)$user->get('field_balance')->getString(),
+                    'role' => $user->getRoles()[1] ?? 'agent',
                     'is_verified' => (bool)$user->get('field_is_verified')->getString(),
                 ];
             }

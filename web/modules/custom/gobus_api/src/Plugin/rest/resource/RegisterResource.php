@@ -65,20 +65,31 @@ class RegisterResource extends ResourceBase
 
         // 4. Création de l'utilisateur
         try {
+            // Auto-generate accountId
+            $role = 'agent';
+            $prefix = 'AGT';
+            $query = \Drupal::entityTypeManager()->getStorage('user')->getQuery()
+                ->condition('field_account_id', $prefix . '-', 'STARTS_WITH')
+                ->accessCheck(FALSE)
+                ->count();
+            $count = (int)$query->execute();
+            $account_id = $prefix . '-' . str_pad($count + 1, 5, '0', STR_PAD_LEFT);
+
             $user = User::create();
             $user->setPassword($data['password']);
             $user->enforceIsNew();
-            $user->setEmail($data['phone'] . '@gobus.tn'); // Fake email based on phone
-            $user->setUsername($data['phone']); // Username = Phone
+            $user->setEmail($data['phone'] . '@gobus.tn');
+            $user->setUsername($data['phone']); // Username = Phone (login by phone)
 
             // Custom Fields
+            $user->set('field_account_id', $account_id);
             $user->set('field_phone', $data['phone']);
-            $user->set('field_full_name', $data['name']); // Changed from 'name' which is username
+            $user->set('field_full_name', $data['name']);
             $user->set('field_shop_name', $data['shop_name']);
             $user->set('field_city', $data['city']);
-            $user->set('field_access_code', $data['access_code']);
+            $user->set('field_access_code', $data['access_code'] ?? '');
             // Role & Status
-            $user->addRole('agent');
+            $user->addRole($role);
             $user->activate();
 
             $user->save();
@@ -111,11 +122,14 @@ class RegisterResource extends ResourceBase
                 'data' => [
                     'user' => [
                         'id' => $user->id(),
+                        'account_id' => $account_id,
                         'phone' => $data['phone'],
                         'name' => $data['name'],
                         'shop_name' => $data['shop_name'],
                         'city' => $data['city'],
-                        'role' => 'agent'
+                        'balance' => 0.0,
+                        'role' => 'agent',
+                        'is_verified' => false,
                     ],
                     'tokens' => [
                         'access_token' => $oauth_data['access_token'] ?? null,

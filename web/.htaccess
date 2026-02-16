@@ -63,6 +63,9 @@ AddType image/webp .webp
 <IfModule mod_rewrite.c>
   RewriteEngine on
 
+  # Pass Authorization header to PHP
+  RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
   # Set "protossl" to "s" if we were accessed via https://.  This is used later
   # if you enable "www." stripping or enforcement, in order to ensure that
   # you don't bounce between http and https.
