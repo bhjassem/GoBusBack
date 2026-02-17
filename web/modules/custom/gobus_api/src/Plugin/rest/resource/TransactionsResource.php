@@ -117,6 +117,12 @@ class TransactionsResource extends ResourceBase
         }
 
         $total_pages = (int)ceil($total_items / $limit);
+        $has_more = $page < $total_pages;
+
+        // Safety check: if we returned fewer items than the limit, we are at the end.
+        if (count($transactions) < $limit) {
+            $has_more = false;
+        }
 
         return new ResourceResponse([
             'success' => true,
@@ -125,7 +131,7 @@ class TransactionsResource extends ResourceBase
                 'current_page' => $page,
                 'total_pages' => $total_pages,
                 'total_items' => $total_items,
-                'has_more' => $page < $total_pages,
+                'has_more' => $has_more,
             ],
         ], 200);
     }
