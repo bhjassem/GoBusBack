@@ -33,6 +33,7 @@ class GobusRouteSubscriber extends RouteSubscriberBase
             'rest.gobus_auth_change_password.',
             'rest.gobus_auth_update_profile.',
             'rest.gobus_auth_refresh.',
+            'rest.gobus_auth_reset_password.',
         ];
 
         foreach ($collection->all() as $name => $route) {

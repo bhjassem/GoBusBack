@@ -96,6 +96,7 @@ class LoginResource extends ResourceBase
                     'balance' => (float)$user->get('field_balance')->getString(),
                     'role' => $user->getRoles()[1] ?? 'agent',
                     'is_verified' => (bool)$user->get('field_is_verified')->getString(),
+                    'created_at' => date('d/m/Y', $user->get('created')->value),
                 ];
             }
 

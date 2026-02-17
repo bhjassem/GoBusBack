@@ -1,0 +1,17 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - gobus_api
+    - serialization
+    - user
+id: gobus_auth_update_profile
+plugin_id: gobus_auth_update_profile
+granularity: resource
+configuration:
+  methods:
+    - PUT
+  formats:
+    - json
+  authentication:
+    - oauth2
