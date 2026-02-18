@@ -13,7 +13,8 @@ use Drupal\node\Entity\Node;
 $num_agents = 10;
 $num_drivers = 15;
 $num_customers = 50;
-$transactions_per_agent = 30;
+$transactions_per_agent_min = 5;
+$transactions_per_agent_max = 40;
 
 $cities = ['Tunis', 'Sousse', 'Sfax', 'Bizerte', 'Gabès', 'Kairouan', 'Gafsa', 'Monastir', 'Ariana', 'Ben Arous'];
 $shop_types = ['Boutique', 'Kiosque', 'Cafétéria', 'Alimentation Générale', 'Télécentre'];
@@ -54,16 +55,17 @@ function create_user_if_not_exists($phone, $role, $data)
     return $user;
 }
 
-function create_transaction($agent_uid, $amount, $type, $date_offset)
+function create_transaction($agent_uid, $customer_uid, $amount, $type, $date_offset)
 {
     $node = Node::create([
         'type' => 'transaction',
         'title' => 'Transaction ' . $type . ' - ' . date('Y-m-d', time() - $date_offset),
         'field_amount' => $amount,
-        'field_client' => ['target_id' => $agent_uid],
+        'field_client' => ['target_id' => $customer_uid],
         'field_transaction_type' => $type,
         'field_commission' => ($type == 'RELOAD') ? $amount * 0.05 : 0, // 5% mock commission
         'created' => time() - $date_offset,
+        'uid' => $agent_uid, // Set Agent as author
         'status' => 1,
     ]);
     $node->save();
@@ -76,7 +78,7 @@ echo "Starting data seeding...\n";
 // 1. Create Agents
 $agents = [];
 for ($i = 1; $i <= $num_agents; $i++) {
-    $phone = '9800000' . str_pad($i, 2, '0', STR_PAD_LEFT);
+    $phone = '980000' . str_pad($i, 2, '0', STR_PAD_LEFT);
     $agents[] = create_user_if_not_exists($phone, 'agent', [
         'name' => 'Agent ' . $i,
         'city' => $cities[array_rand($cities)],
@@ -95,9 +97,10 @@ for ($i = 1; $i <= $num_drivers; $i++) {
 }
 
 // 3. Create Customers
+$customers = [];
 for ($i = 1; $i <= $num_customers; $i++) {
-    $phone = '9600000' . str_pad($i, 2, '0', STR_PAD_LEFT);
-    create_user_if_not_exists($phone, 'client', [
+    $phone = '500000' . str_pad($i, 2, '0', STR_PAD_LEFT);
+    $customers[] = create_user_if_not_exists($phone, 'client', [
         'name' => 'Client ' . $i,
         'city' => $cities[array_rand($cities)],
     ]);
@@ -105,8 +108,9 @@ for ($i = 1; $i <= $num_customers; $i++) {
 
 // 4. Create Transactions for Agents
 foreach ($agents as $agent) {
-    echo "Seeding transactions for Agent: " . $agent->get('field_phone')->value . "\n";
-    for ($j = 0; $j < $transactions_per_agent; $j++) {
+    $count = mt_rand($transactions_per_agent_min, $transactions_per_agent_max);
+    echo "Seeding $count transactions for Agent: " . $agent->get('field_phone')->value . "\n";
+    for ($j = 0; $j < $count; $j++) {
         $type = (mt_rand(0, 100) > 20) ? 'RELOAD' : 'COLLECTION';
         $amount = mt_rand(5, 100);
 
@@ -121,7 +125,8 @@ foreach ($agents as $agent) {
             $offset = mt_rand(7 * 24 * 3600, 90 * 24 * 3600); // More (up to 3 months)
         }
 
-        create_transaction($agent->id(), $amount, $type, $offset);
+        $random_customer = $customers[array_rand($customers)];
+        create_transaction($agent->id(), $random_customer->id(), $amount, $type, $offset);
     }
 }
 

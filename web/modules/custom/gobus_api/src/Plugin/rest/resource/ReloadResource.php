@@ -97,7 +97,7 @@ class ReloadResource extends ResourceBase
                 'field_amount' => $amount,
                 'field_commission' => $commission,
                 'field_transaction_type' => 'RELOAD',
-                // 'field_client' => $client->id(), // If we had a reference field
+                'field_client' => ['target_id' => $client->id()],
                 'uid' => $this->currentUser->id(), // Created by Agent
             ]);
             $transaction->save();
