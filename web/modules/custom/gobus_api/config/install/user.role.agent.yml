@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - gobus_api
+id: agent
+label: 'Agent'
+weight: 3
+is_admin: false
+permissions: []

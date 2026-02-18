@@ -1,0 +1,17 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - gobus_api
+    - serialization
+    - user
+id: gobus_auth_captain_register
+plugin_id: gobus_auth_captain_register
+granularity: resource
+configuration:
+  methods:
+    - POST
+  formats:
+    - json
+  authentication:
+    - oauth2
