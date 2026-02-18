@@ -8,6 +8,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\user\Entity\User;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Provides a resource to update current user profile.
@@ -23,18 +24,29 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 class UpdateProfileResource extends ResourceBase
 {
     protected $currentUser;
+    protected $requestStack;
 
     public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition)
     {
         $instance = parent::create($container, $configuration, $plugin_id, $plugin_definition);
         $instance->currentUser = $container->get('current_user');
+        $instance->requestStack = $container->get('request_stack');
         return $instance;
     }
 
-    public function put($data)
+    public function put()
     {
         if ($this->currentUser->isAnonymous()) {
             return new ResourceResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        // Manually parse JSON body — Drupal REST only auto-deserializes $data
+        // for POST on "create" uri_paths, not for PUT on "canonical" paths.
+        $request = $this->requestStack->getCurrentRequest();
+        $data = json_decode($request->getContent(), TRUE);
+
+        if (empty($data)) {
+            return new ResourceResponse(['success' => false, 'message' => 'Invalid or missing JSON body'], 400);
         }
 
         $user = User::load($this->currentUser->id());
