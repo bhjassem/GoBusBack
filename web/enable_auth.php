@@ -35,6 +35,7 @@ echo "--- Step 1: Roles ---\n";
 $roles_to_create = [
     'agent' => 'Agent',
     'captain' => 'Captain',
+    'client' => 'Client',
 ];
 
 foreach ($roles_to_create as $role_id => $role_label) {
@@ -146,6 +147,24 @@ $resources = [
             'authentication' => ['oauth2'],
         ],
     ],
+    'gobus_api_client_find' => [
+        'plugin_id' => 'gobus_api_client_find',
+        'granularity' => 'resource',
+        'configuration' => [
+            'methods' => ['GET'],
+            'formats' => ['json'],
+            'authentication' => ['oauth2'],
+        ],
+    ],
+    'gobus_api_reload' => [
+        'plugin_id' => 'gobus_api_reload',
+        'granularity' => 'resource',
+        'configuration' => [
+            'methods' => ['POST'],
+            'formats' => ['json'],
+            'authentication' => ['oauth2'],
+        ],
+    ],
 ];
 
 foreach ($resources as $id => $data) {
@@ -195,6 +214,25 @@ echo "\n";
 // ===================================================================
 echo "--- Step 5: Test users ---\n";
 
+// Pre-check: Free up CLT-00001 if it's taken by a different user than our test user (50000099)
+$target_id = 'CLT-00001';
+$target_phone = '50000099';
+
+$conflict_users = \Drupal::entityTypeManager()->getStorage('user')
+    ->loadByProperties(['field_account_id' => $target_id]);
+
+if (!empty($conflict_users)) {
+    foreach ($conflict_users as $u) {
+        $u_phone = $u->hasField('field_phone') ? $u->get('field_phone')->getString() : '';
+        if ($u_phone !== $target_phone) {
+            $new_id = $target_id . '-OLD-' . rand(100, 999);
+            $u->set('field_account_id', $new_id);
+            $u->save();
+            echo "  [FIX] Freed up $target_id from user {$u->id()} ($u_phone). Renamed to $new_id.\n";
+        }
+    }
+}
+
 $test_users = [
     [
         'phone' => '55000001',
@@ -204,6 +242,7 @@ $test_users = [
         'prefix' => 'AGT',
         'shop_name' => 'Test Shop',
         'city' => 'Tunis',
+        'balance' => 500.0,
     ],
     [
         'phone' => '55000002',
@@ -213,6 +252,28 @@ $test_users = [
         'prefix' => 'CPT',
         'shop_name' => '',
         'city' => 'Tunis',
+        'balance' => 0,
+    ],
+    [
+        'phone' => '55000003',
+        'password' => 'client123',
+        'name' => 'Amine Ben Salah',
+        'role' => 'client',
+        'prefix' => 'CLT',
+        'shop_name' => '',
+        'city' => 'Tunis',
+    ],
+    [
+        'phone' => '50000099',
+        'password' => 'gobus123',
+        'name' => 'Client Test QR',
+        'role' => 'client',
+        'prefix' => 'CLT',
+        'shop_name' => '',
+        'city' => 'Ariana',
+        'balance' => 10.500,
+        // Helper to force specific account ID if script supports it logic below
+        'force_account_id' => 'CLT-00001',
     ],
 ];
 
@@ -223,11 +284,30 @@ foreach ($test_users as $test) {
     if (!empty($users)) {
         $existing = reset($users);
         echo "  [OK] {$test['role']} test user already exists (uid: {$existing->id()}, phone: {$test['phone']})\n";
-        // Make sure the role is assigned
+
+        $changed = false;
+        // Ensure role is assigned
         if (!$existing->hasRole($test['role'])) {
             $existing->addRole($test['role']);
+            $changed = true;
+            echo "       + Added missing '{$test['role']}' role.\n";
+        }
+
+        // Ensure force_account_id is applied if set
+        if (!empty($test['force_account_id'])) {
+            // Check if field exists first
+            if ($existing->hasField('field_account_id')) {
+                $current_id = $existing->get('field_account_id')->getString();
+                if ($current_id !== $test['force_account_id']) {
+                    $existing->set('field_account_id', $test['force_account_id']);
+                    $changed = true;
+                    echo "       + Forced account_id to '{$test['force_account_id']}' (was '$current_id').\n";
+                }
+            }
+        }
+
+        if ($changed) {
             $existing->save();
-            echo "       Added missing '{$test['role']}' role.\n";
         }
         continue;
     }
@@ -240,7 +320,13 @@ foreach ($test_users as $test) {
             ->accessCheck(FALSE)
             ->count();
         $count = (int)$query->execute();
-        $account_id = $test['prefix'] . '-' . str_pad($count + 1, 5, '0', STR_PAD_LEFT);
+
+        if (!empty($test['force_account_id'])) {
+            $account_id = $test['force_account_id'];
+        }
+        else {
+            $account_id = $test['prefix'] . '-' . str_pad($count + 1, 5, '0', STR_PAD_LEFT);
+        }
 
         $test_user = User::create();
         $test_user->setPassword($test['password']);
@@ -254,6 +340,9 @@ foreach ($test_users as $test) {
             $test_user->set('field_shop_name', $test['shop_name']);
         }
         $test_user->set('field_city', $test['city']);
+        if (!empty($test['balance'])) {
+            $test_user->set('field_balance', $test['balance']);
+        }
         $test_user->addRole($test['role']);
         $test_user->activate();
         $test_user->save();
@@ -267,9 +356,54 @@ foreach ($test_users as $test) {
 echo "\n";
 
 // ===================================================================
-// STEP 6: Rebuild routes
+// STEP 6: Assign account_id to existing clients that don't have one
 // ===================================================================
-echo "--- Step 6: Rebuilding routes ---\n";
+echo "--- Step 6: Fixing client account IDs ---\n";
+try {
+    $user_storage = \Drupal::entityTypeManager()->getStorage('user');
+
+    // Find all users with 'client' role
+    $client_uids = $user_storage->getQuery()
+        ->condition('roles', 'client')
+        ->condition('status', 1)
+        ->accessCheck(FALSE)
+        ->execute();
+
+    echo "  Found " . count($client_uids) . " client users.\n";
+    $fixed = 0;
+
+    if (!empty($client_uids)) {
+        $clients = $user_storage->loadMultiple($client_uids);
+
+        // Count existing CLT- accounts to know the next number
+        $clt_count_query = $user_storage->getQuery()
+            ->condition('field_account_id', 'CLT-', 'STARTS_WITH')
+            ->accessCheck(FALSE)
+            ->count();
+        $next_num = (int)$clt_count_query->execute() + 1;
+
+        foreach ($clients as $client_user) {
+            $existing_account_id = $client_user->get('field_account_id')->getString();
+            if (empty($existing_account_id)) {
+                $new_account_id = 'CLT-' . str_pad($next_num, 5, '0', STR_PAD_LEFT);
+                $client_user->set('field_account_id', $new_account_id);
+                $client_user->save();
+                echo "  [OK] Assigned $new_account_id to uid " . $client_user->id() . " (" . $client_user->get('field_full_name')->getString() . ")\n";
+                $next_num++;
+                $fixed++;
+            }
+        }
+    }
+    echo "  Fixed $fixed clients without account_id.\n\n";
+}
+catch (\Exception $e) {
+    echo "  [ERROR] " . $e->getMessage() . "\n\n";
+}
+
+// ===================================================================
+// STEP 7: Rebuild routes
+// ===================================================================
+echo "--- Step 7: Rebuilding routes ---\n";
 try {
     \Drupal::service('router.builder')->rebuild();
     echo "  [OK] Routes rebuilt successfully.\n";
@@ -279,8 +413,31 @@ catch (\Exception $e) {
     echo "  Try running: drush cr\n";
 }
 
+// ===================================================================
+// STEP 8: Verification
+// ===================================================================
+echo "--- Step 8: Current Users Dump ---\n";
+$uids = \Drupal::entityTypeManager()->getStorage('user')->getQuery()
+    ->condition('uid', 0, '>')
+    ->accessCheck(FALSE)
+    ->execute();
+$users = User::loadMultiple($uids);
+
+echo str_pad("ID", 5) . " | " . str_pad("Role", 10) . " | " . str_pad("Phone", 12) . " | " . str_pad("Account ID", 12) . " | Name\n";
+echo str_repeat("-", 60) . "\n";
+
+foreach ($users as $u) {
+    if ($u->id() == 1)
+        continue; // Skip admin
+    $roles = $u->getRoles();
+    $role = end($roles); // get last role (usually the specific one)
+    $phone = $u->hasField('field_phone') ? $u->get('field_phone')->getString() : '-';
+    $acc_id = $u->hasField('field_account_id') ? $u->get('field_account_id')->getString() : '-';
+
+    echo str_pad($u->id(), 5) . " | " . str_pad($role, 10) . " | " . str_pad($phone, 12) . " | " . str_pad($acc_id, 12) . " | " . $u->getAccountName() . "\n";
+}
+
 echo "\n=== DONE ===\n";
 echo "\nTest commands:\n";
-echo "  curl -X POST 'https://www.gobus.tn/api/v1/auth/agent/login?_format=json' -H 'Content-Type: application/json' -d '{\"phone\":\"55000001\",\"password\":\"agent123\"}'\n";
-echo "  curl -X POST 'https://www.gobus.tn/api/v1/auth/captain/login?_format=json' -H 'Content-Type: application/json' -d '{\"phone\":\"55000002\",\"password\":\"captain123\"}'\n";
+echo "  curl -X GET 'https://www.gobus.tn/api/v1/clients/search?q=97&_format=json' -H 'Authorization: Bearer <TOKEN>'\n";
 echo "</pre>";

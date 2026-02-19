@@ -40,6 +40,8 @@ class GobusRouteSubscriber extends RouteSubscriberBase
             'rest.gobus_auth_agent_register.',
             'rest.gobus_auth_captain_login.',
             'rest.gobus_auth_captain_register.',
+            'rest.gobus_api_reload.',
+            'rest.gobus_api_client_find.',
         ];
 
         foreach ($collection->all() as $name => $route) {

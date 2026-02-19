@@ -73,9 +73,9 @@ class ReloadResource extends ResourceBase
         // For now assuming: Client gets full amount, Agent earns commission separately (or irrelevant for balance).
         // Let's stick to simple: Balance += Amount.
 
-        // 3. Find Client by Account ID (field_access_code)
+        // 3. Find Client by Account ID
         $users = \Drupal::entityTypeManager()->getStorage('user')
-            ->loadByProperties(['field_access_code' => $client_account_id]);
+            ->loadByProperties(['field_account_id' => $client_account_id]);
 
         if (empty($users)) {
             return new ResourceResponse(['success' => false, 'message' => 'Client not found'], 404);
