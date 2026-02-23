@@ -36,6 +36,11 @@ class UpdateProfileResource extends ResourceBase
 
     public function put()
     {
+        // 0. Rate Limiting: 30 attempts per minute per user
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.update_profile', $rateLimiter::getCurrentUserId(), 30, 60);
+        if ($limited) return $limited;
+
         if ($this->currentUser->isAnonymous()) {
             return new ResourceResponse(['success' => false, 'message' => 'Unauthorized'], 401);
         }

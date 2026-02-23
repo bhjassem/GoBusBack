@@ -25,6 +25,11 @@ class CaptainRegisterResource extends RegisterResource
      */
     public function post($data)
     {
+        // 0. Rate Limiting: 3 attempts per minute per IP
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.captain_register', $rateLimiter::getClientIp(), 3, 60);
+        if ($limited) return $limited;
+
         // 1. Validation basics
         // Note: captains might not have 'shop_name', but for now adhering to common validation
         // or relaxing it if needed. Assuming captains just need basic info for now.

@@ -44,6 +44,11 @@ class LoginResource extends ResourceBase
      */
     public function post($data)
     {
+        // 0. Rate Limiting: 5 attempts per minute per IP
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.login', $rateLimiter::getClientIp(), 5, 60);
+        if ($limited) return $limited;
+
         // 1. Validation
         if (empty($data['phone']) || empty($data['password'])) {
             throw new BadRequestHttpException("Missing phone or password");

@@ -30,6 +30,11 @@ class VerifyCodeResource extends ResourceBase
             throw new BadRequestHttpException("Missing phone or code");
         }
 
+        // 0. Rate Limiting: 5 attempts per 10 minutes per phone number
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.verify_code', $data['phone'], 5, 600);
+        if ($limited) return $limited;
+
         // 2. MOCK VERIFICATION LOGIC (Magic Code 5588)
         if ($data['code'] === '5588') {
             return new ResourceResponse([

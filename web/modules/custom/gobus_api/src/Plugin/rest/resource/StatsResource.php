@@ -35,6 +35,11 @@ class StatsResource extends ResourceBase
 
     public function get()
     {
+        // 0. Rate Limiting: 30 attempts per minute per user
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.stats', $rateLimiter::getCurrentUserId(), 30, 60);
+        if ($limited) return $limited;
+
         if ($this->currentUser->isAnonymous()) {
             return new ResourceResponse([
                 'success' => false,

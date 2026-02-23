@@ -51,6 +51,11 @@ class ClientFindResource extends ResourceBase
      */
     public function get()
     {
+        // 0. Rate Limiting: 30 attempts per minute per user
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.client_find', $rateLimiter::getCurrentUserId(), 30, 60);
+        if ($limited) return $limited;
+
         // 1. Auth check
         if ($this->currentUser->isAnonymous()) {
             return new ResourceResponse(['success' => false, 'message' => 'Unauthorized'], 401);

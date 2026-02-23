@@ -11,3 +11,7 @@ services:
   gobus_api.ledger:
     class: Drupal\gobus_api\Service\GobuxLedgerService
     arguments: ['@entity_type.manager', '@database']
+
+  gobus_api.rate_limiter:
+    class: Drupal\gobus_api\Service\RateLimiterService
+    arguments: ['@flood']

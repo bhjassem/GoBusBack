@@ -51,6 +51,11 @@ class ReloadResource extends ResourceBase
      */
     public function post($data)
     {
+        // 0. Rate Limiting: 30 attempts per minute per user
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.reload', $rateLimiter::getCurrentUserId(), 30, 60);
+        if ($limited) return $limited;
+
         // 1. Check permissions
         if ($this->currentUser->isAnonymous()) {
             return new ResourceResponse(['success' => false, 'message' => 'Unauthorized'], 401);

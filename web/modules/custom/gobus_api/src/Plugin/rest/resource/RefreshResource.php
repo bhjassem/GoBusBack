@@ -29,6 +29,11 @@ class RefreshResource extends ResourceBase
             throw new BadRequestHttpException('Missing refresh_token');
         }
 
+        // 0. Rate Limiting: 10 attempts per minute per IP
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.refresh', $rateLimiter::getClientIp(), 10, 60);
+        if ($limited) return $limited;
+
         $request = \Drupal::request();
         $client = \Drupal::httpClient();
 

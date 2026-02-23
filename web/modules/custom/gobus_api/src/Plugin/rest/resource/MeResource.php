@@ -31,17 +31,16 @@ class MeResource extends ResourceBase
 
     public function get()
     {
+        // 0. Rate Limiting: 30 attempts per minute per user (or IP if anonymous)
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $identifier = $this->currentUser->isAnonymous() ? $rateLimiter::getClientIp() : $rateLimiter::getCurrentUserId();
+        $limited = $rateLimiter->check('gobus.me', $identifier, 30, 60);
+        if ($limited) return $limited;
+
         if ($this->currentUser->isAnonymous()) {
             return new ResourceResponse([
                 'success' => false,
-                'message' => 'Unauthorized. No valid token found.',
-                'debug' => [
-                    'uid' => $this->currentUser->id(),
-                    'roles' => $this->currentUser->getRoles(),
-                    'auth_header_raw' => \Drupal::request()->headers->get('Authorization') ? 'PRESENT' : 'NULL',
-                    'server_auth' => isset($_SERVER['HTTP_AUTHORIZATION']) ? 'FOUND' : 'NOT_FOUND',
-                    'php_sapi' => PHP_SAPI,
-                ]
+                'message' => 'Authentication required.',
             ], 401);
         }
 

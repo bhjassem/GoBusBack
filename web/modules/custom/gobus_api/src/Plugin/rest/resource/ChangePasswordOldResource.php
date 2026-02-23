@@ -33,6 +33,11 @@ class ChangePasswordOldResource extends ResourceBase
 
     public function post($data)
     {
+        // 0. Rate Limiting: 5 attempts per minute per user (sensitive action)
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.change_password', $rateLimiter::getCurrentUserId(), 5, 60);
+        if ($limited) return $limited;
+
         if ($this->currentUser->isAnonymous()) {
             return new ResourceResponse(['success' => false, 'message' => 'Unauthorized'], 401);
         }

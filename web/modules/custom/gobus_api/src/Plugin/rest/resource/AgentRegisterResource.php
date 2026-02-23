@@ -25,6 +25,11 @@ class AgentRegisterResource extends RegisterResource
      */
     public function post($data)
     {
+        // 0. Rate Limiting: 3 attempts per minute per IP
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.agent_register', $rateLimiter::getClientIp(), 3, 60);
+        if ($limited) return $limited;
+
         // 1. Validation basics
         $required_fields = ['phone', 'password', 'name', 'shop_name', 'city', 'code'];
         foreach ($required_fields as $field) {

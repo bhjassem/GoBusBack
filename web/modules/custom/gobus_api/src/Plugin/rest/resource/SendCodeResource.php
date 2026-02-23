@@ -29,6 +29,11 @@ class SendCodeResource extends ResourceBase
             throw new BadRequestHttpException("Missing phone number");
         }
 
+        // 0. Rate Limiting: 3 attempts per 10 minutes per phone number
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.send_code', $data['phone'], 3, 600);
+        if ($limited) return $limited;
+
         // MOCK SEND LOGIC
         // In production, we would call Twilio/InfoBip here.
         // For now, we just say "Success" and user knows the code is 5588.

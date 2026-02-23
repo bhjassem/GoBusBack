@@ -26,6 +26,11 @@ class ResetPasswordResource extends ResourceBase
      */
     public function post($data)
     {
+        // 0. Rate Limiting: 3 attempts per 10 minutes per IP
+        $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
+        $limited = $rateLimiter->check('gobus.reset_password', $rateLimiter::getClientIp(), 3, 600);
+        if ($limited) return $limited;
+
         // 1. Validation
         $required = ['phone', 'code', 'new_password'];
         foreach ($required as $field) {
