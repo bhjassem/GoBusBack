@@ -51,7 +51,7 @@ class RefreshResource extends ResourceBase
                     'client_secret' => $client_secret,
                 ],
                 'http_errors' => false,
-                'verify' => false,
+                'verify' => getenv('GOBUS_SSL_VERIFY') !== 'false',
             ]);
 
             $json_body = (string)$response->getBody();
@@ -69,24 +69,22 @@ class RefreshResource extends ResourceBase
                 ], 200);
             }
             else {
+                \Drupal::logger('gobus_api')->warning('Token refresh failed: status=@status, error=@error', [
+                    '@status' => $response->getStatusCode(),
+                    '@error' => $body['error'] ?? 'unknown',
+                ]);
                 return new ResourceResponse([
                     'success' => false,
-                    'message' => $body['message'] ?? ($body['error_description'] ?? 'Refresh failed externally'),
+                    'message' => $body['message'] ?? ($body['error_description'] ?? 'Token refresh failed.'),
                     'error' => $body['error'] ?? 'unknown_error',
-                    'debug' => [
-                        'status' => $response->getStatusCode(),
-                        'url' => $token_url,
-                        'content_type' => $response->getHeaderLine('Content-Type'),
-                    ],
-                    'raw_body_preview' => substr($json_body, 0, 1000)
                 ], $response->getStatusCode() ?: 500);
             }
         }
         catch (\Exception $e) {
+            \Drupal::logger('gobus_api')->error('Token refresh exception: @message', ['@message' => $e->getMessage()]);
             return new ResourceResponse([
                 'success' => false,
-                'message' => 'Internal logic error: ' . $e->getMessage(),
-                'debug' => ['url' => $token_url]
+                'message' => 'Unable to refresh token.',
             ], 500);
         }
     }

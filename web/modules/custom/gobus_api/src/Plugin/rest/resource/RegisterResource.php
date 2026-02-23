@@ -110,7 +110,7 @@ class RegisterResource extends ResourceBase
                     'password' => $data['password'],
                 ],
                 'http_errors' => false,
-                'verify' => false, // Bypass SSL verification for internal call if needed
+                'verify' => getenv('GOBUS_SSL_VERIFY') !== 'false',
             ]);
 
             $oauth_data = json_decode($response->getBody(), true);

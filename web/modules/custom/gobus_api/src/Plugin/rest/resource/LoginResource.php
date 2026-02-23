@@ -67,7 +67,7 @@ class LoginResource extends ResourceBase
                     'password' => $data['password'],
                 ],
                 'http_errors' => false,
-                'verify' => false, // Fix for local SSL cert issue
+                'verify' => getenv('GOBUS_SSL_VERIFY') !== 'false',
             ]);
 
             $oauth_data = json_decode($response->getBody(), true);

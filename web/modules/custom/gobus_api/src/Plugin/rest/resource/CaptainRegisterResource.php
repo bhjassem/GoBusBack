@@ -93,7 +93,7 @@ class CaptainRegisterResource extends RegisterResource
                     'password' => $data['password'],
                 ],
                 'http_errors' => false,
-                'verify' => false,
+                'verify' => getenv('GOBUS_SSL_VERIFY') !== 'false',
             ]);
 
             $oauth_data = json_decode($response->getBody(), true);
