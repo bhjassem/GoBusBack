@@ -1,0 +1,55 @@
+gobus_admin.agents_dashboard:
+  path: '/admin/gobus/agents'
+  defaults:
+    _controller: '\Drupal\gobus_admin\Controller\AgentManagementController::content'
+    _title: 'GoBus Agents Management'
+  requirements:
+    _permission: 'administer gobus agents'
+
+gobus_admin.agent_load:
+  path: '/admin/gobus/agents/{user}/load'
+  defaults:
+    _form: '\Drupal\gobus_admin\Form\AgentLoadFundsForm'
+    _title: 'Load Funds to Agent'
+  requirements:
+    _permission: 'administer gobus agents'
+  options:
+    parameters:
+      user:
+        type: entity:user
+
+gobus_admin.agent_collect:
+  path: '/admin/gobus/agents/{user}/collect'
+  defaults:
+    _form: '\Drupal\gobus_admin\Form\AgentCollectFundsForm'
+    _title: 'Collect Funds from Agent'
+  requirements:
+    _permission: 'administer gobus agents'
+  options:
+    parameters:
+      user:
+        type: entity:user
+
+gobus_admin.agent_toggle_status:
+  path: '/admin/gobus/agents/{user}/toggle-status'
+  defaults:
+    _controller: '\Drupal\gobus_admin\Controller\AgentManagementController::toggleStatus'
+    _title: 'Toggle Agent Status'
+  requirements:
+    _permission: 'administer gobus agents'
+  options:
+    parameters:
+      user:
+        type: entity:user
+
+gobus_admin.agent_history:
+  path: '/admin/gobus/agents/{user}/history'
+  defaults:
+    _controller: '\Drupal\gobus_admin\Controller\AgentManagementController::transactionHistory'
+    _title: 'Agent Transaction History'
+  requirements:
+    _permission: 'administer gobus agents'
+  options:
+    parameters:
+      user:
+        type: entity:user

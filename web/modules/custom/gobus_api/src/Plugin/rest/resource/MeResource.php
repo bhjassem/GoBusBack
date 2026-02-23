@@ -47,7 +47,11 @@ class MeResource extends ResourceBase
 
         $user = \Drupal\user\Entity\User::load($this->currentUser->id());
 
-        return new ResourceResponse([
+        $ledger_service = \Drupal::service('gobus_api.ledger');
+        $account_id = $ledger_service->getOrCreateAccountForUser($user);
+        $balance = $account_id ? $ledger_service->calculateBalance($account_id) : 0.0;
+
+        $response = new ResourceResponse([
             'success' => true,
             'data' => [
                 'user' => [
@@ -57,11 +61,15 @@ class MeResource extends ResourceBase
                     'name' => $user->get('field_full_name')->getString(),
                     'shop_name' => $user->get('field_shop_name')->getString(),
                     'city' => $user->get('field_city')->getString(),
-                    'balance' => (float)$user->get('field_balance')->getString(),
+                    'balance' => $balance,
                     'role' => $user->getRoles()[1] ?? 'authenticated',
                     'is_verified' => (bool)$user->get('field_is_verified')->getString(),
                 ]
             ]
         ], 200);
+
+        $response->addCacheableDependency($user);
+
+        return $response;
     }
 }

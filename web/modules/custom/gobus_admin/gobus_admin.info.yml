@@ -1,0 +1,7 @@
+name: 'GoBus Admin'
+type: module
+description: 'Back-office dashboard for managing Agent accounts and ledger transactions.'
+package: 'GoBus'
+core_version_requirement: ^10 || ^11
+dependencies:
+  - gobus_api:gobus_api

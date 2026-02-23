@@ -84,35 +84,39 @@ class ReloadResource extends ResourceBase
         $client = reset($users);
 
         try {
-            // 4. Update Client Balance
-            $current_balance = (float)$client->get('field_balance')->value;
-            $new_balance = $current_balance + $amount;
-            $client->set('field_balance', $new_balance);
-            $client->save();
+            $ledger_service = \Drupal::service('gobus_api.ledger');
 
-            // 5. Create Transaction Record
-            $transaction = Node::create([
-                'type' => 'transaction',
-                'title' => 'Reload ' . $client_account_id . ' - ' . date('Y-m-d H:i'),
-                'field_amount' => $amount,
-                'field_commission' => $commission,
-                'field_transaction_type' => 'RELOAD',
-                'field_client' => ['target_id' => $client->id()],
-                'uid' => $this->currentUser->id(), // Created by Agent
-            ]);
-            $transaction->save();
+            // 4. Get Accounts
+            $agent_user = User::load($this->currentUser->id());
+            $agent_account_id = $ledger_service->getOrCreateAccountForUser($agent_user);
 
-            // 6. Return Response matching app expectations (or define new structure)
-            // App expects something like:
-            /*
-             NewReloadEffect.NavigateToSuccess(
-             transactionId = transactionId,
-             amount = formatString("%.3f", currentState.amount),
-             commission = formatString("%.3f", currentState.commission),
-             clientName = currentState.client.fullName,
-             accountId = currentState.client.accountId
-             )
-             */
+            if (!$agent_account_id) {
+                return new ResourceResponse(['success' => false, 'message' => 'Agent account error.'], 400);
+            }
+
+            // Optional: Check Agent Balance
+            $agent_balance = $ledger_service->calculateBalance($agent_account_id);
+            if ($agent_balance < $amount) {
+                return new ResourceResponse(['success' => false, 'message' => 'Insufficient agent balance.'], 400);
+            }
+
+            $client_account_node_id = $ledger_service->getOrCreateAccountForUser($client);
+            if (!$client_account_node_id) {
+                return new ResourceResponse(['success' => false, 'message' => 'Client account error.'], 400);
+            }
+
+            // 5. Create Transaction Record via Ledger
+            $transaction = $ledger_service->recordTransaction(
+                $agent_account_id,
+                $client_account_node_id,
+                $amount,
+                'RELOAD',
+                $this->currentUser->id(),
+                $commission,
+                $client->id()
+            );
+
+            $new_balance = $ledger_service->calculateBalance($client_account_node_id);
 
             return new ResourceResponse([
                 'success' => true,

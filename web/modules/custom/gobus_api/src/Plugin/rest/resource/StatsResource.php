@@ -101,6 +101,8 @@ class StatsResource extends ResourceBase
         $reload_query->addExpression('COUNT(n.nid)', 'reload_count');
         $reload_query->addExpression('COALESCE(SUM(a.field_amount_value), 0)', 'reload_total');
         $reload_query->addExpression('COALESCE(SUM(com.field_commission_value), 0)', 'commission_total');
+        // Calculate unique clients served
+        $reload_query->addExpression('COUNT(DISTINCT c.field_client_target_id)', 'unique_clients');
 
         $reload_result = $reload_query->execute()->fetchAssoc();
 
@@ -147,6 +149,7 @@ class StatsResource extends ResourceBase
                 'recharge_count' => (int)($reload_result['reload_count'] ?? 0),
                 'total_recharge_amount' => (float)($reload_result['reload_total'] ?? 0),
                 'total_commission' => (float)($reload_result['commission_total'] ?? 0),
+                'clients_served' => (int)($reload_result['unique_clients'] ?? 0), // New field for unique clients
                 'collection_count' => (int)($collection_result['collection_count'] ?? 0),
                 'total_collection_amount' => (float)($collection_result['collection_total'] ?? 0),
                 'last_collection_date' => $last_collection_date_formatted,

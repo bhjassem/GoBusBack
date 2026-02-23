@@ -1,0 +1,14 @@
+.status-active {
+  color: white;
+  background-color: #28a745;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+.status-blocked {
+  color: white;
+  background-color: #dc3545;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}

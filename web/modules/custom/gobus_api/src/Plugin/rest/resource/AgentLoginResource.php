@@ -85,6 +85,10 @@ class AgentLoginResource extends LoginResource
             }
             // -------------------------------------------
 
+            $ledger_service = \Drupal::service('gobus_api.ledger');
+            $account_id = $ledger_service->getOrCreateAccountForUser($user);
+            $balance = $account_id ? $ledger_service->calculateBalance($account_id) : 0.0;
+            
             $user_dto = [
                 'id' => $user->id(),
                 'account_id' => $user->get('field_account_id')->getString(),
@@ -92,7 +96,7 @@ class AgentLoginResource extends LoginResource
                 'name' => $user->get('field_full_name')->getString(),
                 'shop_name' => $user->get('field_shop_name')->getString(),
                 'city' => $user->get('field_city')->getString(),
-                'balance' => (float)$user->get('field_balance')->getString(),
+                'balance' => $balance,
                 'role' => $user->getRoles()[1] ?? 'agent',
                 'is_verified' => (bool)$user->get('field_is_verified')->getString(),
                 'created_at' => date('d/m/Y', $user->get('created')->value),

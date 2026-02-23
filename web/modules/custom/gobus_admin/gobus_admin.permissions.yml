@@ -1,0 +1,4 @@
+administer gobus agents:
+  title: 'Administer GoBus Agents'
+  description: 'Manage agent balances, load funds, and collect cash.'
+  restrict access: true

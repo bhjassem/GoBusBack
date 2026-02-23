@@ -1,0 +1,6 @@
+gobus_admin.agents_dashboard:
+  title: 'GoBus Agents'
+  description: 'Manage agent balances and ledger transactions.'
+  parent: system.admin
+  route_name: gobus_admin.agents_dashboard
+  weight: 10

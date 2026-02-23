@@ -7,3 +7,7 @@ services:
     class: Drupal\gobus_api\Routing\GobusRouteSubscriber
     tags:
       - { name: event_subscriber }
+
+  gobus_api.ledger:
+    class: Drupal\gobus_api\Service\GobuxLedgerService
+    arguments: ['@entity_type.manager', '@database']
