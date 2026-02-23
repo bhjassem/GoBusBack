@@ -38,9 +38,9 @@ class AgentLoginResource extends LoginResource
         // --- DUPLICATED & MODIFIED LOGIC from LoginResource ---
 
         try {
-            // Determine Client ID based on platform or default to Reload App
-            $client_id = 'gobus-reload-app-id';
-            $client_secret = 'gobus_reload_secret';
+            // OAuth Client credentials from environment variables
+            $client_id = getenv('OAUTH_CLIENT_ID') ?: throw new \RuntimeException('OAUTH_CLIENT_ID env variable not set');
+            $client_secret = getenv('OAUTH_CLIENT_SECRET') ?: throw new \RuntimeException('OAUTH_CLIENT_SECRET env variable not set');
 
             $request = \Drupal::request();
             $base_url = $request->getSchemeAndHttpHost();

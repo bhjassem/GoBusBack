@@ -76,8 +76,8 @@ class AgentRegisterResource extends RegisterResource
 
             // 5. Auto-Login (Delegate to parent logic or duplicate if needed)
             // For simplicity and independence, duplicating the OAuth call
-            $client_id = 'gobus-reload-app-id';
-            $client_secret = 'gobus_reload_secret';
+            $client_id = getenv('OAUTH_CLIENT_ID') ?: throw new \RuntimeException('OAUTH_CLIENT_ID env variable not set');
+            $client_secret = getenv('OAUTH_CLIENT_SECRET') ?: throw new \RuntimeException('OAUTH_CLIENT_SECRET env variable not set');
 
             $request = \Drupal::request();
             $base_url = $request->getSchemeAndHttpHost();

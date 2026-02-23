@@ -32,8 +32,8 @@ class RefreshResource extends ResourceBase
         $request = \Drupal::request();
         $client = \Drupal::httpClient();
 
-        $client_id = 'gobus-reload-app-id';
-        $client_secret = 'gobus_reload_secret';
+        $client_id = getenv('OAUTH_CLIENT_ID') ?: throw new \RuntimeException('OAUTH_CLIENT_ID env variable not set');
+        $client_secret = getenv('OAUTH_CLIENT_SECRET') ?: throw new \RuntimeException('OAUTH_CLIENT_SECRET env variable not set');
 
         // Match working pattern from RegisterResource
         $base_url = $request->getSchemeAndHttpHost();

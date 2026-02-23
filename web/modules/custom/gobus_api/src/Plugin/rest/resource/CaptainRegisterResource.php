@@ -78,8 +78,8 @@ class CaptainRegisterResource extends RegisterResource
 
             // 5. Auto-Login
             // Captain app might have different ID/Secret in future, but using default for now or generic
-            $client_id = 'gobus-reload-app-id'; // ToDo: Change to captain app id when available
-            $client_secret = 'gobus_reload_secret';
+            $client_id = getenv('OAUTH_CLIENT_ID') ?: throw new \RuntimeException('OAUTH_CLIENT_ID env variable not set');
+            $client_secret = getenv('OAUTH_CLIENT_SECRET') ?: throw new \RuntimeException('OAUTH_CLIENT_SECRET env variable not set');
 
             $request = \Drupal::request();
             $base_url = $request->getSchemeAndHttpHost();
