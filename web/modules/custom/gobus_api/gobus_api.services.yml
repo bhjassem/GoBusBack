@@ -19,3 +19,7 @@ services:
   gobus_api.idempotency:
     class: Drupal\gobus_api\Service\IdempotencyService
     arguments: ['@database']
+
+  gobus_api.transaction_limits:
+    class: Drupal\gobus_api\Service\TransactionLimitService
+    arguments: ['@database']

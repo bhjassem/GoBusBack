@@ -147,6 +147,18 @@ class ReloadResource extends ResourceBase
                 return new ResourceResponse($errorBody, 400);
             }
 
+            // 5c. Transaction Limits (min/max, daily, monthly)
+            $limitService = \Drupal::service('gobus_api.transaction_limits');
+            $limitCheck = $limitService->checkLimits($agent_account_id, $client_account_node_id, $amount, $userId);
+            if (!$limitCheck['allowed']) {
+                // Do NOT store in idempotency — limits are transient (may pass later).
+                return new ResourceResponse([
+                    'success' => false,
+                    'message' => $limitCheck['message'],
+                    'error' => ['reason' => $limitCheck['reason']],
+                ], 403);
+            }
+
             // 6. Create Transaction Record via Ledger
             $transaction = $ledger_service->recordTransaction(
                 $agent_account_id,
