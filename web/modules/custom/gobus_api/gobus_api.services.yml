@@ -15,3 +15,7 @@ services:
   gobus_api.rate_limiter:
     class: Drupal\gobus_api\Service\RateLimiterService
     arguments: ['@flood']
+
+  gobus_api.idempotency:
+    class: Drupal\gobus_api\Service\IdempotencyService
+    arguments: ['@database']

@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations for the GoBus API module.
+ */
+
+/**
+ * Implements hook_cron().
+ *
+ * Cleans up expired idempotency keys (older than 24 hours).
+ */
+function gobus_api_cron() {
+  /** @var \Drupal\gobus_api\Service\IdempotencyService $idempotency */
+  $idempotency = \Drupal::service('gobus_api.idempotency');
+  $deleted = $idempotency->cleanupExpiredKeys();
+
+  if ($deleted > 0) {
+    \Drupal::logger('gobus_api')->info(
+      'Idempotency cleanup: removed @count expired keys.',
+      ['@count' => $deleted]
+    );
+  }
+}

@@ -1,0 +1,82 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the GoBus API module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function gobus_api_schema() {
+  $schema['gobus_idempotency'] = [
+    'description' => 'Stores idempotency keys to prevent duplicate transactions.',
+    'fields' => [
+      'id' => [
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary key.',
+      ],
+      'idempotency_key' => [
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => 'UUID v4 idempotency key from the client.',
+      ],
+      'user_id' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The user ID who made the request.',
+      ],
+      'endpoint' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'The API endpoint (e.g. /api/v1/reload).',
+      ],
+      'response_code' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'HTTP response status code.',
+      ],
+      'response_body' => [
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+        'description' => 'JSON-encoded response body.',
+      ],
+      'created_at' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'Unix timestamp when the key was first used.',
+      ],
+    ],
+    'primary key' => ['id'],
+    'unique keys' => [
+      'idempotency_key_user' => ['idempotency_key', 'user_id'],
+    ],
+    'indexes' => [
+      'created_at' => ['created_at'],
+      'user_id' => ['user_id'],
+    ],
+  ];
+
+  return $schema;
+}
+
+/**
+ * Create the gobus_idempotency table.
+ *
+ * Run this update hook if the module was already installed before
+ * the table was added to hook_schema().
+ */
+function gobus_api_update_10001() {
+  $schema = gobus_api_schema();
+  $database = \Drupal::database();
+
+  if (!$database->schema()->tableExists('gobus_idempotency')) {
+    $database->schema()->createTable('gobus_idempotency', $schema['gobus_idempotency']);
+  }
+}
