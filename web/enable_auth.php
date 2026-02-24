@@ -233,10 +233,16 @@ if (!empty($conflict_users)) {
     }
 }
 
+// Test user password: read from env var or generate a secure random one.
+// Set GOBUS_TEST_PASSWORD in .env to use a custom password for all test users.
+$test_password = getenv('GOBUS_TEST_PASSWORD') ?: bin2hex(random_bytes(12));
+echo "  Test users password: $test_password\n";
+echo "  (Set GOBUS_TEST_PASSWORD env var to override)\n\n";
+
 $test_users = [
     [
         'phone' => '55000001',
-        'password' => 'agent123',
+        'password' => $test_password,
         'name' => 'Agent Test',
         'role' => 'agent',
         'prefix' => 'AGT',
@@ -246,7 +252,7 @@ $test_users = [
     ],
     [
         'phone' => '55000002',
-        'password' => 'captain123',
+        'password' => $test_password,
         'name' => 'Captain Test',
         'role' => 'captain',
         'prefix' => 'CPT',
@@ -256,7 +262,7 @@ $test_users = [
     ],
     [
         'phone' => '55000003',
-        'password' => 'client123',
+        'password' => $test_password,
         'name' => 'Amine Ben Salah',
         'role' => 'client',
         'prefix' => 'CLT',
@@ -265,14 +271,13 @@ $test_users = [
     ],
     [
         'phone' => '50000099',
-        'password' => 'gobus123',
+        'password' => $test_password,
         'name' => 'Client Test QR',
         'role' => 'client',
         'prefix' => 'CLT',
         'shop_name' => '',
         'city' => 'Ariana',
         'balance' => 10.500,
-        // Helper to force specific account ID if script supports it logic below
         'force_account_id' => 'CLT-00001',
     ],
 ];

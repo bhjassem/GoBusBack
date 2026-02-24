@@ -14,6 +14,18 @@
 .env
 .env.local
 
+# Test and debug scripts (may contain credentials)
+/scripts/test_*
+/scripts/seed_*
+/scripts/reset_*
+/scripts/inspect_*
+/scripts/list_*
+/web/scripts/test_*
+/web/scripts/verify_*
+/web/scripts/seed_*
+/web/scripts/reset_*
+/web/scripts/debug_*
+
 # mac
 .DS_Store
 
