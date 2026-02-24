@@ -67,7 +67,8 @@ class AgentManagementController extends ControllerBase
             'name' => $this->t('User Name / Phone'),
             'full_name' => $this->t('Full Name'),
             'status' => $this->t('Status'),
-            'balance' => $this->t('Ledger Balance (DT)'),
+            'balance' => $this->t('Virtual Balance (DT)'),
+            'unsettled_cash' => $this->t('Debt / To Collect (DT)'),
             'operations' => $this->t('Operations'),
         ];
 
@@ -85,11 +86,13 @@ class AgentManagementController extends ControllerBase
             $users = $this->entityTypeManager->getStorage('user')->loadMultiple($uids);
 
             foreach ($users as $user) {
-                // Calculate ledger balance
+                // Calculate balances
                 $balance = 0.0;
+                $unsettled_cash = 0.0;
                 $account_node_id = $this->ledgerService->getOrCreateAccountForUser($user);
                 if ($account_node_id) {
                     $balance = $this->ledgerService->calculateBalance($account_node_id);
+                    $unsettled_cash = $this->ledgerService->calculateUnsettledCash($account_node_id);
                 }
 
                 // Output Status
@@ -104,8 +107,12 @@ class AgentManagementController extends ControllerBase
                             'title' => $this->t('💰 Load Funds'),
                             'url' => Url::fromRoute('gobus_admin.agent_load', ['user' => $user->id()]),
                         ],
+                        'settle' => [
+                            'title' => $this->t('🤝 Encaisser Cash'),
+                            'url' => Url::fromRoute('gobus_admin.agent_settle', ['user' => $user->id()]),
+                        ],
                         'collect' => [
-                            'title' => $this->t('💸 Collect Cash'),
+                            'title' => $this->t('🔙 Reprendre Invendus'),
                             'url' => Url::fromRoute('gobus_admin.agent_collect', ['user' => $user->id()]),
                         ],
                         'toggle' => [
@@ -125,6 +132,8 @@ class AgentManagementController extends ControllerBase
                     $full_name = $user->get('field_full_name')->value;
                 }
 
+                $debt_class = ($unsettled_cash > 0) ? 'status-blocked' : 'status-active';
+
                 $rows[] = [
                     'id' => $user->id(),
                     'name' => $user->getAccountName(),
@@ -137,6 +146,11 @@ class AgentManagementController extends ControllerBase
                     'balance' => [
                         'data' => [
                             '#markup' => '<strong>' . number_format($balance, 3, '.', '') . '</strong>'
+                        ]
+                    ],
+                    'unsettled_cash' => [
+                        'data' => [
+                            '#markup' => '<strong class="' . $debt_class . '">' . number_format($unsettled_cash, 3, '.', '') . '</strong>'
                         ]
                     ],
                     'operations' => [

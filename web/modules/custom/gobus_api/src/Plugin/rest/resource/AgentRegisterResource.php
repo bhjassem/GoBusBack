@@ -28,7 +28,8 @@ class AgentRegisterResource extends RegisterResource
         // 0. Rate Limiting: 3 attempts per minute per IP
         $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
         $limited = $rateLimiter->check('gobus.agent_register', $rateLimiter::getClientIp(), 3, 60);
-        if ($limited) return $limited;
+        if ($limited)
+            return $limited;
 
         // 1. Validation basics
         $required_fields = ['phone', 'password', 'name', 'shop_name', 'city', 'code'];
@@ -114,8 +115,10 @@ class AgentRegisterResource extends RegisterResource
                         'shop_name' => $data['shop_name'],
                         'city' => $data['city'],
                         'balance' => 0.0,
+                        'unsettled_cash' => 0.0,
                         'role' => 'agent', // Explicit
                         'is_verified' => false,
+                        'created_at' => date('d/m/Y', $user->get('created')->value),
                     ],
                     'tokens' => [
                         'access_token' => $oauth_data['access_token'] ?? null,

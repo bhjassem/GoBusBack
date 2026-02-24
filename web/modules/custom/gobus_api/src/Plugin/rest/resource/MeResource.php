@@ -35,7 +35,8 @@ class MeResource extends ResourceBase
         $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
         $identifier = $this->currentUser->isAnonymous() ? $rateLimiter::getClientIp() : $rateLimiter::getCurrentUserId();
         $limited = $rateLimiter->check('gobus.me', $identifier, 30, 60);
-        if ($limited) return $limited;
+        if ($limited)
+            return $limited;
 
         if ($this->currentUser->isAnonymous()) {
             return new ResourceResponse([
@@ -50,6 +51,9 @@ class MeResource extends ResourceBase
         $account_id = $ledger_service->getOrCreateAccountForUser($user);
         $balance = $account_id ? $ledger_service->calculateBalance($account_id) : 0.0;
 
+        // Add unsettled_cash primarily for agents, but safe to calc for any account.
+        $unsettled_cash = $account_id ? $ledger_service->calculateUnsettledCash($account_id) : 0.0;
+
         $response = new ResourceResponse([
             'success' => true,
             'data' => [
@@ -61,6 +65,7 @@ class MeResource extends ResourceBase
                     'shop_name' => $user->get('field_shop_name')->getString(),
                     'city' => $user->get('field_city')->getString(),
                     'balance' => $balance,
+                    'unsettled_cash' => $unsettled_cash,
                     'role' => $user->getRoles()[1] ?? 'authenticated',
                     'is_verified' => (bool)$user->get('field_is_verified')->getString(),
                 ]

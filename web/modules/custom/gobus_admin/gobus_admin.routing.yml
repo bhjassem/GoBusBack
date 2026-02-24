@@ -22,7 +22,19 @@ gobus_admin.agent_collect:
   path: '/admin/gobus/agents/{user}/collect'
   defaults:
     _form: '\Drupal\gobus_admin\Form\AgentCollectFundsForm'
-    _title: 'Collect Funds from Agent'
+    _title: 'Revoke Funds from Agent'
+  requirements:
+    _permission: 'administer gobus agents'
+  options:
+    parameters:
+      user:
+        type: entity:user
+
+gobus_admin.agent_settle:
+  path: '/admin/gobus/agents/{user}/settle'
+  defaults:
+    _form: '\Drupal\gobus_admin\Form\AgentSettleCashForm'
+    _title: 'Settle Cash with Agent'
   requirements:
     _permission: 'administer gobus agents'
   options:

@@ -91,11 +91,8 @@ class UpdateProfileResource extends ResourceBase
             ], 200);
         }
         catch (\Throwable $e) {
-            \Drupal::logger('gobus_api')->error('Update Profile Error: @message Trace: @trace', [
-                '@message' => $e->getMessage(),
-                '@trace' => $e->getTraceAsString()
-            ]);
-            return new ResourceResponse(['success' => false, 'message' => $e->getMessage()], 500);
+            \Drupal::logger('gobus_api')->error('Update Profile Error: @message', ['@message' => $e->getMessage()]);
+            return new ResourceResponse(['success' => false, 'message' => 'Internal Server Error'], 500);
         }
     }
 }

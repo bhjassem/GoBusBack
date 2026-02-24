@@ -186,11 +186,9 @@ class ClientFindResource extends ResourceBase
         $name_parts = explode(' ', $full_name, 2);
 
         return [
-            'uid' => $user->id(), // Useful for internal logic if needed
             'account_id' => $user->get('field_account_id')->getString(),
             'first_name' => $name_parts[0] ?? '',
             'last_name' => $name_parts[1] ?? '',
-            // 'balance' => REMOVED for privacy
         ];
     }
 }

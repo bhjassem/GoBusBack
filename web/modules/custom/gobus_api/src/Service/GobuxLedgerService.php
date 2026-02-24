@@ -53,6 +53,46 @@ class GobuxLedgerService
     }
 
     /**
+     * Calculate the "unsettled cash" for an Agent.
+     * This represents the total amount of cash the agent has collected from clients
+     * (via RELOAD operations) MINUS the cash they have already remitted to the system
+     * (via COLLECTION operations).
+     * 
+     * @param int|string $account_id The Node ID of the agent's gobus_account
+     * @return float
+     */
+    public function calculateUnsettledCash($account_id): float
+    {
+        // 1. Sum up all RELOAD amounts where this account is the Sender (field_from_account)
+        // This is the cash they collected from clients.
+        $reloads_query = $this->database->select('node__field_amount', 'amount')
+            ->condition('amount.bundle', 'transaction');
+        $reloads_query->join('node__field_from_account', 'from_account', 'amount.entity_id = from_account.entity_id');
+        $reloads_query->join('node__field_transaction_type', 'type', 'amount.entity_id = type.entity_id');
+
+        $reloads_query->condition('from_account.field_from_account_target_id', $account_id);
+        $reloads_query->condition('type.field_transaction_type_value', 'RELOAD');
+        $reloads_query->addExpression('SUM(amount.field_amount_value)', 'total_collected');
+
+        $total_collected = $reloads_query->execute()->fetchField();
+
+        // 2. Sum up all COLLECTION amounts where this account is the Sender
+        // This is the cash they have already given back to the Admin.
+        $collections_query = $this->database->select('node__field_amount', 'amount')
+            ->condition('amount.bundle', 'transaction');
+        $collections_query->join('node__field_from_account', 'from_account', 'amount.entity_id = from_account.entity_id');
+        $collections_query->join('node__field_transaction_type', 'type', 'amount.entity_id = type.entity_id');
+
+        $collections_query->condition('from_account.field_from_account_target_id', $account_id);
+        $collections_query->condition('type.field_transaction_type_value', 'COLLECTION');
+        $collections_query->addExpression('SUM(amount.field_amount_value)', 'total_remitted');
+
+        $total_remitted = $collections_query->execute()->fetchField();
+
+        return (float)($total_collected ?? 0) - (float)($total_remitted ?? 0);
+    }
+
+    /**
      * Retrieves the gobus_account node ID for a given user.
      * Creates it on the fly if it doesn't exist.
      * 

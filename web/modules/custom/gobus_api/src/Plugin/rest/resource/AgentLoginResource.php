@@ -29,7 +29,8 @@ class AgentLoginResource extends LoginResource
         // 0. Rate Limiting: 5 attempts per minute per IP
         $rateLimiter = \Drupal::service('gobus_api.rate_limiter');
         $limited = $rateLimiter->check('gobus.agent_login', $rateLimiter::getClientIp(), 5, 60);
-        if ($limited) return $limited;
+        if ($limited)
+            return $limited;
 
         // 1. Validation
         if (empty($data['phone']) || empty($data['password'])) {
@@ -93,7 +94,9 @@ class AgentLoginResource extends LoginResource
             $ledger_service = \Drupal::service('gobus_api.ledger');
             $account_id = $ledger_service->getOrCreateAccountForUser($user);
             $balance = $account_id ? $ledger_service->calculateBalance($account_id) : 0.0;
-            
+            $unsettled_cash = $account_id ? $ledger_service->calculateUnsettledCash($account_id) : 0.0;
+            // TODO: Implement today's sales calculation if needed immediately on login
+
             $user_dto = [
                 'id' => $user->id(),
                 'account_id' => $user->get('field_account_id')->getString(),
@@ -102,6 +105,7 @@ class AgentLoginResource extends LoginResource
                 'shop_name' => $user->get('field_shop_name')->getString(),
                 'city' => $user->get('field_city')->getString(),
                 'balance' => $balance,
+                'unsettled_cash' => $unsettled_cash,
                 'role' => $user->getRoles()[1] ?? 'agent',
                 'is_verified' => (bool)$user->get('field_is_verified')->getString(),
                 'created_at' => date('d/m/Y', $user->get('created')->value),

@@ -149,8 +149,8 @@ class RegisterResource extends ResourceBase
 
         }
         catch (\Exception $e) {
-            \Drupal::logger('gobus_api')->error('Registration error: ' . $e->getMessage() . ' Trace: ' . $e->getTraceAsString());
-            return new ResourceResponse(['success' => false, 'message' => 'Internal Server Error: ' . $e->getMessage()], 500);
+            \Drupal::logger('gobus_api')->error('Registration error: @message', ['@message' => $e->getMessage()]);
+            return new ResourceResponse(['success' => false, 'message' => 'Internal Server Error'], 500);
         }
     }
 
